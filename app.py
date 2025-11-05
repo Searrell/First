@@ -26,7 +26,14 @@ def generate_dummy_data():
 
 @app.route("/api/v1.0/businesses", methods=["GET"])
 def show_all_businesses():
-    return make_response( jsonify( businesses ), 200 )
+    page_num, page_size = 1, 10
+    if request.args.get("pn"):
+        page_num = int(request.args.get("pn"))
+    if request.args.get("ps"):
+        page_size = int(request.args.get("ps"))
+    page_start = page_size * (page_num - 1)
+    businesses_list = [ { k : v} for k, v in businesses.items()]
+    return make_response( jsonify( businesses_list[page_start : page_start + page_size] ), 200 )
 
 @app.route("/api/v1.0/businesses/<string:id>", methods=["GET"])
 def show_one_business(id):

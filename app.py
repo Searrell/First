@@ -1,47 +1,40 @@
 from flask import Flask, make_response, jsonify, request
+import uuid, random
 
 app = Flask(__name__)
 
 # Sample business data
-businesses = [
-    {
-        "id": 1,
-        "name": "Pizza Mountain",
-        "town": "Coleraine",
-        "rating": 5,
-        "reviews": []
-    },
-    {
-        "id": 2,
-        "name": "Wine Lake",
-        "town": "Ballymoney",
-        "rating": 3,
-        "reviews": []
-    },
-    {
-        "id": 3,
-        "name": "Sweet Desert",
-        "town": "Ballymena",
-        "rating": 4,
-        "reviews": []
-    }
-]
+businesses = {}
+
+def generate_dummy_data():
+    towns = ["Belfast", "Derry", "Bambridge", "Lisburn", "Newry"]
+    business_dict = {}
+
+    for i in range(100):
+        id = str(uuid.uuid1())
+        name = "Biz " + str(i)
+        town = towns[ random.randint(0, len(towns) - 1) ]
+        rating = random.randint(1, 5)
+        business_dict[id] = {
+            "name": name,
+            "town": town,
+            "rating": rating,
+            "reviews": []
+        }
+    return business_dict
+
 
 @app.route("/api/v1.0/businesses", methods=["GET"])
 def show_all_businesses():
     return make_response( jsonify( businesses ), 200 )
 
-@app.route("/api/v1.0/businesses/<int:id>", methods=["GET"])
+@app.route("/api/v1.0/businesses/<string:id>", methods=["GET"])
 def show_one_business(id):
-    data_to_return = \
-        [ business for business in businesses \
-            if business["id"] == id ]
-    return make_response( jsonify( \
-        data_to_return[0] ), 200 )
+    return make_response( jsonify( businesses[id] ), 200 )
 
 @app.route("/api/v1.0/businesses", methods=["POST"])
 def add_business():
-    next_id = businesses[-1]["id"] + 1
+    next_id = str(uuid.uuid1())
     new_business = {
         "id": next_id,
         "name": request.form["name"],
@@ -49,25 +42,20 @@ def add_business():
         "rating": request.form["rating"],
         "reviews": []
     }
-    businesses.append(new_business)
-    return make_response(jsonify(new_business), 201)
+    businesses[next_id] = new_business
+    return make_response(jsonify( new_business ), 201)
 
-@app.route("/api/v1.0/businesses/<int:id>", methods=["PUT"])
+@app.route("/api/v1.0/businesses/<string:id>", methods=["PUT"])
 def edit_business(id):
-    for business in businesses:
-        if business["id"] == id:
-            business["name"] = request.form["name"]
-            business["town"] = request.form["town"]
-            business["rating"] = request.form["rating"]
-            break
-    return make_response(jsonify(business), 200)
+    businesses[id]["name"] = request.form["name"]
+    businesses[id]["town"] = request.form["town"]
+    businesses[id]["rating"] = request.form["rating"]
 
-@app.route("/api/v1.0/businesses/<int:id>", methods=["DELETE"])
+    return make_response(jsonify({id : businesses[id]}), 200)
+
+@app.route("/api/v1.0/businesses/<string:id>", methods=["DELETE"])
 def delete_business(id):
-    for business in businesses:
-        if business["id"] == id:
-            businesses.remove(business)
-            break
+    del businesses[id]
     return make_response(jsonify({}), 200)
 
 @app.route("/api/v1.0/businesses/<int:id>/reviews", methods=["GET"])
@@ -140,4 +128,5 @@ def delete_review(b_id, r_id):
 
 # Run the Flask app
 if __name__ == "__main__":
+    businesses = generate_dummy_data()
     app.run(debug=True)
